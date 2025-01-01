@@ -1,0 +1,91 @@
+*****youtube link
+https://www.youtube.com/watch?v=Kbvch_swZWA
+
+
+1. create droplet or ec2 instance
+2.connect with putty or ssh
+3. run command
+    - sudo apt-get update
+4.install docker
+    - sudo apt-get install docker.io
+5.docker ps
+    - if getting error give permissions (may be occure when using ec2)
+        - sudo usermod -aG docker $USER && newgrp docker
+
+6. install kind
+    - mkdir k8s-install (create dir)
+        - cd k8s-install-kind
+            - vim install_kind.sh(add belove code to this file)
+            =====================================================================================================================================================
+                #!/bin/bash
+
+                    # For AMD64 / x86_64
+
+                    [ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
+                    chmod +x ./kind
+                    sudo cp ./kind /usr/local/bin/kind
+                    rm -rf kind
+            =====================================================================================================================================================
+            - chmod +x install_kind.sh(give permission to executable)
+            - ./install_kind.sh (run this command for install kind)
+            - kind --version(check installation)
+        - install kubernet cluster
+            - vim config.yml(you can see this file also in this dir)
+            =====================================================================================================================================================
+            kind: Cluster
+            apiVersion: kind.x-k8s.io/v1alpha4
+
+            nodes:
+            - role: control-plane
+            image: kindest/node:v1.30.0
+            - role: worker
+            image: kindest/node:v1.30.0
+            - role: worker
+            image: kindest/node:v1.30.0
+            =====================================================================================================================================================
+            - kind create clucter --config=config.yml --name=my-unick-cluster
+        - install kubectl
+            - vim install_kubectl.sh
+            =====================================================================================================================================================
+                #!/bin/bash
+
+                # Variables
+                VERSION="v1.30.0"
+                URL="https://dl.k8s.io/release/${VERSION}/bin/linux/amd64/kubectl"
+                INSTALL_DIR="/usr/local/bin"
+
+                # Download and install kubectl
+                curl -LO "$URL"
+                chmod +x kubectl
+                sudo mv kubectl $INSTALL_DIR/
+                kubectl version --client
+
+                # Clean up
+                rm -f kubectl
+
+                echo "kubectl installation complete."
+
+            =====================================================================================================================================================
+        - chmod +x install_kubectl.sh
+7. installing Argo CD
+    - kubectl create namespace argocd
+    - kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+    - kubectl get pods -n argocd(for verify installation)
+    - kubectl get svc -n argocd
+    - kubectl patch svc argocd-server -n argodv -p '{"spec":{"type":"NodePort"}}'
+    - kubectl port-forward -n argocd service/argocd-server 8443:443 --address=0.0.0.0 &
+    - kubectl get secret -n argocd argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
+
+## 8. Installing Kubernetes Dashboard
+
+    - Deploy Kubernetes dashboard:
+    ```bash
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
+    ```
+
+    - Create a token for dashboard access:
+    ```bash
+    kubectl -n kubernetes-dashboard create token admin-user
+    ```
+
+    ---
